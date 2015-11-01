@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.badigaadi.app.AppConfig;
@@ -37,8 +38,8 @@ import com.android.badigaadi.helper.SessionManager;
 public class LoginActivity extends Activity {
     private static final String TAG = RegisterActivity.class.getSimpleName();
     private Button btnLogin;
-    private Button btnLinkToRegister;
-    private EditText inputEmail;
+    private TextView btnLinkToRegister;
+    private EditText inputEmail, forgot_password;
     private EditText inputPassword;
     private ProgressDialog pDialog;
     private SessionManager session;
@@ -52,12 +53,13 @@ public class LoginActivity extends Activity {
         inputEmail = (EditText) findViewById(R.id.email);
         inputPassword = (EditText) findViewById(R.id.password);
         btnLogin = (Button) findViewById(R.id.btnLogin);
-        btnLinkToRegister = (Button) findViewById(R.id.btnLinkToRegisterScreen);
+        btnLinkToRegister = (TextView) findViewById(R.id.btnLinkToRegisterScreen);
+        forgot_password = (EditText)findViewById(R.id.forgot_password);
 
         // Progress dialog
         pDialog = new ProgressDialog(this);
         pDialog.setCancelable(false);
-
+        forgot_password.setFocusable(false);
         // SQLite database handler
         db = new SQLiteHandler(getApplicationContext());
 
