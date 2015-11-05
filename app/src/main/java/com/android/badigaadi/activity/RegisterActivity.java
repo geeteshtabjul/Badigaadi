@@ -9,8 +9,12 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -19,6 +23,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.andreabaccega.widget.FormEditText;
 import com.android.badigaadi.R;
 import com.android.badigaadi.app.AppConfig;
 import com.android.badigaadi.app.AppController;
@@ -34,27 +39,42 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class RegisterActivity extends Activity {
+public class RegisterActivity extends Activity implements TextWatcher {
     private static final String TAG = RegisterActivity.class.getSimpleName();
     private Button btnRegister;
     private TextView btnLinkToLogin;
-    private EditText inputFullName;
-    private EditText inputEmail;
-    private EditText inputPassword;
+    private FormEditText user_company_name, user_address, user_contact_no;
+    private FormEditText inputPassword, confirm_password;
     private ProgressDialog pDialog;
     private SessionManager session;
     private SQLiteHandler db;
+    FormEditText user_name;
+
     Spinner userChoice;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_register);
 
-        inputFullName = (EditText) findViewById(R.id.name);
-        inputEmail = (EditText) findViewById(R.id.email);
-        inputPassword = (EditText) findViewById(R.id.password);
+        user_name = (FormEditText) findViewById(R.id.name);
+        user_company_name = (FormEditText) findViewById(R.id.company_name);
+        user_address = (FormEditText) findViewById(R.id.address);
+        user_contact_no = (FormEditText) findViewById(R.id.contact_number);
+        inputPassword = (FormEditText) findViewById(R.id.user_sign_up_password);
+        confirm_password = (FormEditText) findViewById(R.id.confirm_password);
+        user_company_name.addTextChangedListener(this);
+        user_address.addTextChangedListener(this);
+        user_contact_no.addTextChangedListener(this);
+        inputPassword.addTextChangedListener(this);
+        confirm_password.addTextChangedListener(this);
+        user_name.addTextChangedListener(this);
         btnRegister = (Button) findViewById(R.id.btnRegister);
         btnLinkToLogin = (TextView) findViewById(R.id.btnLinkToLoginScreen);
 
@@ -80,16 +100,42 @@ public class RegisterActivity extends Activity {
         // Register Button Click event
         btnRegister.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                String name = inputFullName.getText().toString().trim();
-                String email = inputEmail.getText().toString().trim();
-                String password = inputPassword.getText().toString().trim();
+                String name = user_name.getText().toString().trim();
+                String companyname = user_company_name.getText().toString().trim();
+                String companyaddress = user_address.getText().toString().trim();
+                String companycontact = user_contact_no.getText().toString().trim();
 
-                if (!name.isEmpty() && !email.isEmpty() && !password.isEmpty()) {
-                    registerUser(name, email, password);
+                String password = inputPassword.getText().toString().trim();
+                String confirmPassword = confirm_password.getText().toString().trim();
+                if (confirmPassword.equals(password)) {
+
+                    if (!name.isEmpty() && !companycontact.isEmpty() && !companyaddress.isEmpty() &&
+                            !companyname.isEmpty() && !password.isEmpty()) {
+
+                        FormEditText[] allFields = {user_name,user_company_name, user_address, user_contact_no,
+                        inputPassword, confirm_password};
+
+                        boolean allValid = true;
+                        for (FormEditText field: allFields) {
+                            allValid = field.testValidity() && allValid;
+                        }
+                        if(allValid) {
+                            registerUser(name, companyname, companycontact, companyaddress, password);
+                        }
+                        else{
+                            Toast.makeText(RegisterActivity.this, "Wrong Details", Toast.LENGTH_SHORT).show();
+                        }
+
+
+                    } else {
+                        Toast.makeText(getApplicationContext(),
+                                "Please enter your details!", Toast.LENGTH_SHORT)
+                                .show();
+                    }
                 } else {
-                    Toast.makeText(getApplicationContext(),
-                            "Please enter your details!", Toast.LENGTH_SHORT)
-                            .show();
+                    inputPassword.setText("");
+                    confirm_password.setText("");
+                    Toast.makeText(RegisterActivity.this, "Passwords don't match", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -111,7 +157,8 @@ public class RegisterActivity extends Activity {
      * Function to store user in MySQL database will post params(tag, name,
      * email, password) to register url
      */
-    private void registerUser(final String name, final String email,
+    private void registerUser(final String name, final String companyName, final String companyContact,
+                              final String companyAddress,
                               final String password) {
         // Tag used to cancel the request
         String tag_string_req = "req_register";
@@ -122,27 +169,35 @@ public class RegisterActivity extends Activity {
         StringRequest strReq = new StringRequest(Method.POST,
                 AppConfig.URL_REGISTER, new Response.Listener<String>() {
 
+
             @Override
             public void onResponse(String response) {
                 Log.d(TAG, "Register Response: " + response.toString());
                 hideDialog();
 
+
                 try {
                     JSONObject jObj = new JSONObject(response);
+
                     boolean error = jObj.getBoolean("error");
                     if (!error) {
                         // User successfully stored in MySQL
                         // Now store the user in sqlite
-                        String uid = jObj.getString("uid");
+
 
                         JSONObject user = jObj.getJSONObject("user");
                         String name = user.getString("name");
-                        String email = user.getString("email");
+                        String company_name = user.getString("company_name");
+                        String company_address = user.getString("address");
+                        String company_contact = user.getString("contact_no");
                         String created_at = user
                                 .getString("created_at");
 
+                        String updated_at = user
+                                .getString("updated_at");
+                        Toast.makeText(RegisterActivity.this, name, Toast.LENGTH_SHORT).show();
                         // Inserting row in users table
-                        db.addUser(name, email, uid, created_at);
+                        db.addUser(name, company_name, company_contact, company_address, created_at, updated_at);
 
                         Toast.makeText(getApplicationContext(), "User successfully registered. Try login now!", Toast.LENGTH_LONG).show();
 
@@ -181,8 +236,11 @@ public class RegisterActivity extends Activity {
                 // Posting params to register url
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("name", name);
-                params.put("email", email);
+                params.put("company_name", companyName);
+                params.put("contact_no", companyContact);
+                params.put("address", companyAddress);
                 params.put("password", password);
+
 
                 return params;
             }
@@ -203,5 +261,38 @@ public class RegisterActivity extends Activity {
             pDialog.dismiss();
     }
 
+    public static boolean validate(String txt) {
 
-}
+        String regx = "^[\\p{L} .'-]+$";
+        Pattern pattern = Pattern.compile(regx, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(txt);
+        return matcher.find();
+
+    }
+
+
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+    }
+
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+    }
+
+    @Override
+    public void afterTextChanged(Editable s) {
+       /* boolean allValid;
+        allValid = user_name.testValidity();
+        if (allValid) {
+            Toast.makeText(RegisterActivity.this, "Yes", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(RegisterActivity.this, "Not", Toast.LENGTH_SHORT).show();
+            String str = user_name.getText().toString();
+            str = str.substring(0, str.length() - 1);
+            user_name.setText(str);
+            user_name.setSelection(user_name.getText().length());
+        }
+    }*/
+}}

@@ -39,10 +39,11 @@ public class LoginActivity extends Activity {
     private static final String TAG = RegisterActivity.class.getSimpleName();
     private Button btnLogin;
     private TextView btnLinkToRegister;
-    private EditText inputEmail, forgot_password;
+    private EditText user_contact, forgot_password;
     private EditText inputPassword;
     private ProgressDialog pDialog;
     private SessionManager session;
+
     private SQLiteHandler db;
 
     @Override
@@ -50,7 +51,7 @@ public class LoginActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        inputEmail = (EditText) findViewById(R.id.email);
+        user_contact = (EditText) findViewById(R.id.contact);
         inputPassword = (EditText) findViewById(R.id.password);
         btnLogin = (Button) findViewById(R.id.btnLogin);
         btnLinkToRegister = (TextView) findViewById(R.id.btnLinkToRegisterScreen);
@@ -78,13 +79,13 @@ public class LoginActivity extends Activity {
         btnLogin.setOnClickListener(new View.OnClickListener() {
 
             public void onClick(View view) {
-                String email = inputEmail.getText().toString().trim();
+                String contact_no = user_contact.getText().toString().trim();
                 String password = inputPassword.getText().toString().trim();
 
                 // Check for empty data in the form
-                if (!email.isEmpty() && !password.isEmpty()) {
+                if (!contact_no.isEmpty() && !password.isEmpty()) {
                     // login user
-                    checkLogin(email, password);
+                    checkLogin(contact_no, password);
                 } else {
                     // Prompt user to enter credentials
                     Toast.makeText(getApplicationContext(),
@@ -111,7 +112,7 @@ public class LoginActivity extends Activity {
     /**
      * function to verify login details in mysql db
      * */
-    private void checkLogin(final String email, final String password) {
+    private void checkLogin(final String contact_no, final String password) {
         // Tag used to cancel the request
         String tag_string_req = "req_login";
 
@@ -124,30 +125,37 @@ public class LoginActivity extends Activity {
             @Override
             public void onResponse(String response) {
                 Log.d(TAG, "Login Response: " + response.toString());
-                hideDialog();
+                Toast.makeText(LoginActivity.this, response.toString(), Toast.LENGTH_SHORT).show();
+
 
 
                 try {
+                    hideDialog();
                     JSONObject jObj = new JSONObject(response);
                     boolean error = jObj.getBoolean("error");
 
                     // Check for error node in json
                     if (!error) {
                         // user successfully logged in
+                       // hideDialog();
+                        Toast.makeText(LoginActivity.this, "Working", Toast.LENGTH_SHORT).show();
                         // Create login session
                         session.setLogin(true);
 
                         // Now store the user in SQLite
-                        String uid = jObj.getString("uid");
+
 
                         JSONObject user = jObj.getJSONObject("user");
                         String name = user.getString("name");
-                        String email = user.getString("email");
+                        String contact = user.getString("contact_no");
+                        String company_name = user.getString("company_name");
+                        String address = user.getString("address");
+
                         String created_at = user
                                 .getString("created_at");
-
+                        String updated_at = user.getString("updated_at");
                         // Inserting row in users table
-                        db.addUser(name, email, uid, created_at);
+                        db.addUser(name, company_name, contact, address, created_at, updated_at);
 
                         // Launch main activity
                         Intent intent = new Intent(LoginActivity.this,
@@ -182,7 +190,7 @@ public class LoginActivity extends Activity {
             protected Map<String, String> getParams() {
                 // Posting parameters to login url
                 Map<String, String> params = new HashMap<String, String>();
-                params.put("email", email);
+                params.put("contact_no", contact_no);
                 params.put("password", password);
 
                 return params;

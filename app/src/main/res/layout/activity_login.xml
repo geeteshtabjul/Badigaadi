@@ -32,17 +32,17 @@
                 android:textIsSelectable="false" />
 
             <EditText
-                android:id="@+id/email"
+                android:id="@+id/contact"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="10dp"
                 android:background="@color/white"
-                android:inputType="textEmailAddress"
                 android:padding="10dp"
                 android:singleLine="true"
                 android:textColor="@color/input_login"
                 android:textColorHint="@color/input_login_hint"
-                android:layout_marginTop="5dp" />
+                android:layout_marginTop="5dp"
+                android:inputType="phone" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -75,14 +75,14 @@
                 android:layout_height="match_parent"
                 android:layout_marginBottom="10dp"
                 android:background="@color/white"
-                    android:padding="10dp"
-                android:singleLine="true"
+                    android:singleLine="true"
                 android:textColor="@color/input_login"
                 android:textColorHint="@color/input_login_hint"
                 android:layout_marginTop="5dp"
-                android:layout_weight=".6"
+                android:layout_weight=".55"
                     android:id="@+id/forgot_password"
-                    android:text="Forgot Password" />
+                    android:text="Forgot Password"
+                    android:gravity="center_vertical|center_horizontal" />
 
             </LinearLayout>
         </LinearLayout>
